@@ -10,6 +10,10 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
+## create .env
+
+- Copy `template.env` to `.env` and set values
+
 ## Execute
 
 ```shell
