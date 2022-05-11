@@ -27,8 +27,12 @@ twitter = Twitter(auth=OAuth(oauth_token, oauth_secret, CONSUMER_KEY, CONSUMER_S
 
 updated_at = datetime.now(timezone.utc)
 
-for tweet in twitter.favorites.list(count=INPAGE_COUNT, include_entities=True):
+for tweet in twitter.favorites.list(count=INPAGE_COUNT, include_entities=True, tweet_mode='extended'):
   tweet_id = str(tweet['id'])
+
+  # tweet = twitter.statuses.show(id=tweet_id, include_entities=True, include_ext_alt_text=True)
+  # time.sleep(1)
+
   user_id = str(tweet['user']['id'])
   screen_name = tweet['user']['screen_name']
 
