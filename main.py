@@ -7,11 +7,14 @@ ROOT_PATH = Path(os.environ['ROOT_PATH'])
 CREDENTIAL_PATH = Path(os.environ['CREDENTIAL_PATH'])
 CONSUMER_KEY = os.environ['CONSUMER_KEY']
 CONSUMER_SECRET = os.environ['CONSUMER_SECRET']
+INPAGE_COUNT = int(os.environ['INPAGE_COUNT'])
 
 import json
 from urllib.parse import urlencode, urlparse
 from urllib.request import urlopen
 import tempfile
+import time
+from datetime import datetime, timezone
 
 from twitter import Twitter, OAuth, oauth_dance, read_token_file
 
@@ -22,7 +25,9 @@ oauth_token, oauth_secret = read_token_file(CREDENTIAL_PATH)
 
 twitter = Twitter(auth=OAuth(oauth_token, oauth_secret, CONSUMER_KEY, CONSUMER_SECRET))
 
-for tweet in twitter.favorites.list(count=10, include_entities=True):
+updated_at = datetime.now(timezone.utc)
+
+for tweet in twitter.favorites.list(count=INPAGE_COUNT, include_entities=True):
   tweet_id = str(tweet['id'])
   user_id = str(tweet['user']['id'])
   screen_name = tweet['user']['screen_name']
@@ -56,6 +61,7 @@ for tweet in twitter.favorites.list(count=10, include_entities=True):
       image_data = urlopen(image_url).read()
       with open(image_path, 'wb') as fp:
         fp.write(image_data)
+      time.sleep(1)
 
     elif media_type == 'video':
       variants = medium['video_info']['variants']
@@ -89,7 +95,27 @@ for tweet in twitter.favorites.list(count=10, include_entities=True):
       video_data = urlopen(best_video_url).read()
       with open(video_path, 'wb') as fp:
         fp.write(video_data)
+      time.sleep(1)
 
   json_path = tweet_dir / 'tweet.json'
+
+  found_at = updated_at
+  if json_path.exists():
+    with open(json_path, 'r', encoding='utf-8') as fp:
+      old_data = None
+      try:
+        old_data = json.load(fp)
+      except ValueError:
+        traceback.print_exc()
+
+      if old_data is not None:
+        found_at_str = old_data.get('found_at')
+        if found_at_str is not None:
+          found_at = datetime.fromisoformat(found_at_str)
+
   with open(json_path, 'w', encoding='utf-8') as fp:
-    json.dump(tweet, fp, ensure_ascii=False)
+    json.dump({
+      'tweet': tweet,
+      'found_at': found_at.isoformat(),
+      'updated_at': updated_at.isoformat(),
+    }, fp, ensure_ascii=False)
