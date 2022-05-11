@@ -32,14 +32,18 @@ for tweet in twitter.favorites.list(count=INPAGE_COUNT, include_entities=True):
   user_id = str(tweet['user']['id'])
   screen_name = tweet['user']['screen_name']
 
-  tweet_url = f'https://twitter.com/{screen_name}/{tweet_id}'
+  tweet_url = f'https://twitter.com/{screen_name}/status/{tweet_id}'
   print(tweet_url)
 
   tweet_dir = Path(ROOT_PATH, user_id, tweet_id)
   tweet_dir.mkdir(parents=True, exist_ok=True)
 
+  entities = tweet.get('entities', {})
+  media = entities.get('media', [])
+
   extended_entities = tweet.get('extended_entities', {})
-  media = extended_entities.get('media', [])
+  media += extended_entities.get('media', [])
+
   for medium in media:
     media_type = medium['type']
     if media_type == 'photo':
