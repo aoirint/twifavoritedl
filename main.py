@@ -27,7 +27,15 @@ twitter = Twitter(auth=OAuth(oauth_token, oauth_secret, CONSUMER_KEY, CONSUMER_S
 
 updated_at = datetime.now(timezone.utc)
 
-for tweet in twitter.favorites.list(count=INPAGE_COUNT, include_entities=True, tweet_mode='extended'):
+tweets = []
+
+# favorite tweets
+tweets += twitter.favorites.list(count=INPAGE_COUNT, include_entities=True, tweet_mode='extended')
+
+# self tweets
+tweets += twitter.statuses.user_timeline(count=INPAGE_COUNT, include_entities=True, include_rts=True, tweet_mode='extended')
+
+for tweet in tweets:
   tweet_id = str(tweet['id'])
 
   user_id = str(tweet['user']['id'])
