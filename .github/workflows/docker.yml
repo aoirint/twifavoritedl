@@ -31,7 +31,7 @@ jobs:
       - name: Build and Deploy Docker image
         uses: docker/build-push-action@v3
         env:
-          IMAGE_NAME_AND_TAG: ${{ format('{0}:{1}, env.IMAGE_NAME, env.IMAGE_TAG) }}
+          IMAGE_NAME_AND_TAG: ${{ format('{0}:{1}', env.IMAGE_NAME, env.IMAGE_TAG) }}
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
