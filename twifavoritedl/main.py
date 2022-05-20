@@ -4,9 +4,10 @@ load_dotenv()
 import os
 from pathlib import Path
 ROOT_PATH = Path(os.environ['ROOT_PATH'])
-CREDENTIAL_PATH = Path(os.environ['CREDENTIAL_PATH'])
 CONSUMER_KEY = os.environ['CONSUMER_KEY']
 CONSUMER_SECRET = os.environ['CONSUMER_SECRET']
+OAUTH_TOKEN = os.environ['OAUTH_TOKEN']
+OAUTH_SECRET = os.environ['OAUTH_SECRET']
 INPAGE_COUNT = int(os.environ['INPAGE_COUNT'])
 
 import json
@@ -16,14 +17,9 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
-from twitter import Twitter, OAuth, oauth_dance, read_token_file
+from twitter import Twitter, OAuth, oauth_dance
 
-if not CREDENTIAL_PATH.exists():
-  oauth_dance('twifavoritedl', CONSUMER_KEY, CONSUMER_SECRET, CREDENTIAL_PATH)
-
-oauth_token, oauth_secret = read_token_file(CREDENTIAL_PATH)
-
-twitter = Twitter(auth=OAuth(oauth_token, oauth_secret, CONSUMER_KEY, CONSUMER_SECRET))
+twitter = Twitter(auth=OAuth(OAUTH_TOKEN, OAUTH_SECRET, CONSUMER_KEY, CONSUMER_SECRET))
 
 updated_at = datetime.now(timezone.utc)
 

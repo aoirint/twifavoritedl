@@ -2,24 +2,35 @@
 
 - Python 3.8
 
-## setup venv
+## build docker image
 
 ```shell
-python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
+make build
 ```
 
-## create .env
+## create .env.myaccount
 
-- Copy `template.env` to `.env` and set values
+- Copy `template.env` to `.env.myaccount` and set values
 
-## Execute
+## run authenticate
 
 ```shell
-python3 main.py
-# Or
-./exec.sh
+make authenticate ARGS="--env-file=$(pwd)/.env.myaccount"
+```
+
+## create save directory
+
+Save directory has to be owned by user=1000 and group=1000.
+
+```shell
+mkdir -p /path/to/twifavoritedl/tweets_myaccount
+sudo chown -R 1000:1000 /path/to/twifavoritedl/tweets_myaccount
+```
+
+## run crawl
+
+```shell
+make run ARGS="--env-file=$(pwd)/.env.myaccount -v=/path/to/twifavoritedl/tweets_myaccount:/path/to/twifavoritedl/tweets_myaccount"
 ```
 
 ## Update requirements
