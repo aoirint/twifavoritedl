@@ -24,6 +24,8 @@ Enable OAuth 1.0a and copy CONSUMER_KEY and CONSUMER_SECRET to your .env.
 make authenticate ARGS="--env-file=$(pwd)/.env.myaccount"
 ```
 
+Open printed URL in your browser and authorize your app.
+
 Paste outputs (OAUTH_TOKEN, OAUTH_SECRET) to your .env.
 
 ## create save directory
