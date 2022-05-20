@@ -12,6 +12,12 @@ make build
 
 - Copy `template.env` to `.env.myaccount` and set values
 
+## create twitter app
+
+- <https://developer.twitter.com/en/portal/projects-and-apps>
+
+Enable OAuth 1.0a and copy CONSUMER_KEY and CONSUMER_SECRET to your .env.
+
 ## run authenticate
 
 ```shell
