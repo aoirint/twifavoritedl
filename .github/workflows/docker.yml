@@ -24,11 +24,11 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           DOCKER_REGISTRY_URL: docker.io
 
-      - name: Build :latest
+      - name: Build docker image
         if: success()
         run: docker build -t "aoirint/twifavoritedl:${{ env.IMAGE_TAG }}" .
 
-      - name: Deploy :latest
+      - name: Deploy docker image
         if: success()
         uses: actions-hub/docker@master
         with:
