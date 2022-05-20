@@ -18,6 +18,8 @@ make build
 make authenticate ARGS="--env-file=$(pwd)/.env.myaccount"
 ```
 
+Paste outputs (OAUTH_TOKEN, OAUTH_SECRET) to your .env.
+
 ## create save directory
 
 Save directory has to be owned by user=1000 and group=1000.
