@@ -16,8 +16,16 @@ from urllib.request import urlopen
 import tempfile
 import time
 from datetime import datetime, timezone
+from typing import Optional
 
 from twitter import Twitter, OAuth, oauth_dance
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--max_id', type=int)
+args = parser.parse_args()
+
+param_max_id: Optional[int] = args.max_id
 
 twitter = Twitter(auth=OAuth(OAUTH_TOKEN, OAUTH_SECRET, CONSUMER_KEY, CONSUMER_SECRET))
 
@@ -26,7 +34,7 @@ updated_at = datetime.now(timezone.utc)
 tweets = []
 
 # favorite tweets
-tweets += twitter.favorites.list(count=INPAGE_COUNT, include_entities=True, tweet_mode='extended')
+tweets += twitter.favorites.list(count=INPAGE_COUNT, include_entities=True, tweet_mode='extended', max_id=param_max_id)
 
 # self tweets
 tweets += twitter.statuses.user_timeline(count=INPAGE_COUNT, include_entities=True, include_rts=True, tweet_mode='extended')
