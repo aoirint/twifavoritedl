@@ -23,9 +23,11 @@ from twitter import Twitter, OAuth, oauth_dance
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--max_id', type=int)
+parser.add_argument('--full_save', action='store_true')
 args = parser.parse_args()
 
 param_max_id: Optional[int] = args.max_id
+flag_full_save: bool = args.full_save
 
 twitter = Twitter(auth=OAuth(OAUTH_TOKEN, OAUTH_SECRET, CONSUMER_KEY, CONSUMER_SECRET))
 
@@ -34,7 +36,35 @@ updated_at = datetime.now(timezone.utc)
 tweets = []
 
 # favorite tweets
-tweets += twitter.favorites.list(count=INPAGE_COUNT, include_entities=True, tweet_mode='extended', max_id=param_max_id)
+if not flag_full_save:
+  kwargs = {}
+  if param_max_id is not None: # optional kwarg
+    kwargs['max_id'] = param_max_id
+
+  new_tweets = twitter.favorites.list(count=INPAGE_COUNT, include_entities=True, tweet_mode='extended', **kwargs)
+
+  tweets += new_tweets
+else:
+  saved_tweet_ids = []
+
+  while True:
+    kwargs = {}
+    if param_max_id is not None: # optional kwarg
+      kwargs['max_id'] = param_max_id
+
+    new_tweets = twitter.favorites.list(count=INPAGE_COUNT, include_entities=True, tweet_mode='extended', **kwargs)
+    if len(new_tweets) == 0:
+      print(f'No tweet found anymore (max id: {param_max_id})')
+      break
+    if len(new_tweets) == 1 and new_tweets[0]['id'] == param_max_id and param_max_id in saved_tweet_ids:
+      print('Oldest tweet saved')
+      break
+
+    param_max_id = min(map(lambda tweet: int(tweet['id']), new_tweets))
+    tweets += new_tweets
+    saved_tweet_ids += list(map(lambda tweet: int(tweet['id']), new_tweets))
+    print(f'Current tweets: {len(tweets)}, oldest ID: {param_max_id}')
+    time.sleep(3)
 
 # self tweets
 tweets += twitter.statuses.user_timeline(count=INPAGE_COUNT, include_entities=True, include_rts=True, tweet_mode='extended')
