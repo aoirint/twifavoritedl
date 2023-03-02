@@ -37,6 +37,17 @@ class SearchConfig(BaseModel):
   keyword: str
 
 
+class LookupConfig(BaseModel):
+  root_path: Path
+  consumer_key: str
+  consumer_secret: str
+  oauth_token: str
+  oauth_secret: str
+  inpage_count: int
+  id_list: list[int]
+  id_list_file: Path | None
+
+
 class AuthenticateConfig(BaseModel):
   consumer_key: str
   consumer_secret: str
@@ -301,6 +312,63 @@ def run_search(args):
   )
 
 
+def __run_lookup(config: LookupConfig):
+  twitter = Twitter(
+    auth=OAuth(
+      config.oauth_token,
+      config.oauth_secret,
+      config.consumer_key,
+      config.consumer_secret,
+    ),
+  )
+
+  updated_at = datetime.now(timezone.utc)
+
+  tweets = []
+
+  # lookup tweets
+  id_list = config.id_list
+  if config.id_list_file is not None:
+    id_list.extend(map(lambda id_str: int(id_str.strip()), config.id_list_file.read_text(encoding='utf-8').split()))
+
+  index = 0
+
+  for index in range(0, len(id_list), config.inpage_count):
+    new_tweets = twitter.statuses.lookup(
+      _id=','.join(map(lambda id_int: str(id_int), id_list[index:index+config.inpage_count])),
+      count=config.inpage_count,
+      include_entities=True,
+      tweet_mode='extended',
+    )
+
+    tweets += new_tweets
+    print(f'Current tweets: {len(tweets)}, index: {index}')
+    time.sleep(3)
+
+  download_tweets(
+    output_dir=config.root_path,
+    tweets=tweets,
+    updated_at=updated_at,
+  )
+
+
+def run_lookup(args):
+  __run_lookup(
+    config=LookupConfig(
+      root_path=args.root_path,
+      oauth_token=args.oauth_token,
+      oauth_secret=args.oauth_secret,
+      consumer_key=args.consumer_key,
+      consumer_secret=args.consumer_secret,
+      inpage_count=args.inpage_count,
+      max_id=args.max_id,
+      full_save=args.full_save,
+      id_list=args.id_list,
+      id_list_file=args.id_list_file,
+    )
+  )
+
+
 def __run_authenticate(config: AuthenticateConfig):
   oauth_token, oauth_secret = oauth_dance('twifavoritedl', config.consumer_key, config.consumer_secret)
 
@@ -346,6 +414,19 @@ def main():
   subparser_search.add_argument('--full_save', action='store_true')
   subparser_search.add_argument('--keyword', type=str, default=os.environ.get('TWIFAVDL_KEYWORD'))
   subparser_search.set_defaults(handler=run_search)
+
+  subparser_lookup = subparsers.add_parser('lookup')
+  subparser_lookup.add_argument('--root_path', type=Path, default=os.environ.get('TWIFAVDL_ROOT_PATH'))
+  subparser_lookup.add_argument('--consumer_key', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_KEY'))
+  subparser_lookup.add_argument('--consumer_secret', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_SECRET'))
+  subparser_lookup.add_argument('--oauth_token', type=str, default=os.environ.get('TWIFAVDL_OAUTH_TOKEN'))
+  subparser_lookup.add_argument('--oauth_secret', type=str, default=os.environ.get('TWIFAVDL_OAUTH_SECRET'))
+  subparser_lookup.add_argument('--inpage_count', type=int, default=os.environ.get('TWIFAVDL_INPAGE_COUNT'))
+  subparser_lookup.add_argument('--max_id', type=int)
+  subparser_lookup.add_argument('--full_save', action='store_true')
+  subparser_lookup.add_argument('--id_list', type=int, nargs='*', default=os.environ.get('TWIFAVDL_ID_LIST'))
+  subparser_lookup.add_argument('--id_list_file', type=Path, default=os.environ.get('TWIFAVDL_ID_LIST_FILE'))
+  subparser_lookup.set_defaults(handler=run_lookup)
 
   subparser_authenticate = subparsers.add_parser('authenticate')
   subparser_authenticate.add_argument('--consumer_key', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_KEY'))
