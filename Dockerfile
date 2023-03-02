@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.10
 
 ENV PYTHONUNBUFFERED=1
 
@@ -16,5 +16,4 @@ RUN gosu user pip3 install --no-cache-dir -r /tmp/requirements.txt
 ADD ./twifavoritedl /opt/twifavoritedl
 
 WORKDIR /opt/twifavoritedl
-CMD [ "gosu", "user", "python3", "main.py" ]
-
+ENTRYPOINT [ "gosu", "user", "python3", "main.py" ]

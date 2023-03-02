@@ -1,6 +1,14 @@
 # twifavoritedl
 
-- Python 3.8
+- Python 3.10
+
+```shell
+docker build -t aoirint/twifavoritedl .
+
+docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl
+```
+
+---
 
 ## build docker image
 
