@@ -70,6 +70,7 @@ docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl favori
 docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl search --keyword="#superbowl"
 
 docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl lookup --id_list 1050118621198921728 20
+docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl lookup --id_list_file /data/id_list.txt
 ```
 
 ## Update requirements
