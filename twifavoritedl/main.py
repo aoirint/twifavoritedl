@@ -8,6 +8,7 @@ from urllib.request import urlopen
 import traceback
 import time
 from datetime import datetime, timezone
+from typing import Any
 
 from twitter import Twitter, OAuth, oauth_dance
 
@@ -30,56 +31,11 @@ class AuthenticateConfig(BaseModel):
   consumer_secret: str
 
 
-def __run_favorite(config: FavoriteConfig):
-  param_max_id = config.max_id
-
-  twitter = Twitter(
-    auth=OAuth(
-      config.oauth_token,
-      config.oauth_secret,
-      config.consumer_key,
-      config.consumer_secret,
-    ),
-  )
-
-  updated_at = datetime.now(timezone.utc)
-
-  tweets = []
-
-  # favorite tweets
-  if not config.full_save:
-    kwargs = {}
-    if param_max_id is not None: # optional kwarg
-      kwargs['max_id'] = param_max_id
-
-    new_tweets = twitter.favorites.list(count=config.inpage_count, include_entities=True, tweet_mode='extended', **kwargs)
-
-    tweets += new_tweets
-  else:
-    saved_tweet_ids = []
-
-    while True:
-      kwargs = {}
-      if param_max_id is not None: # optional kwarg
-        kwargs['max_id'] = param_max_id
-
-      new_tweets = twitter.favorites.list(count=config.inpage_count, include_entities=True, tweet_mode='extended', **kwargs)
-      if len(new_tweets) == 0:
-        print(f'No tweet found anymore (max id: {param_max_id})')
-        break
-      if len(new_tweets) == 1 and new_tweets[0]['id'] == param_max_id and param_max_id in saved_tweet_ids:
-        print('Oldest tweet saved')
-        break
-
-      param_max_id = min(map(lambda tweet: int(tweet['id']), new_tweets))
-      tweets += new_tweets
-      saved_tweet_ids += list(map(lambda tweet: int(tweet['id']), new_tweets))
-      print(f'Current tweets: {len(tweets)}, oldest ID: {param_max_id}')
-      time.sleep(3)
-
-  # self tweets
-  tweets += twitter.statuses.user_timeline(count=config.inpage_count, include_entities=True, include_rts=True, tweet_mode='extended')
-
+def download_tweets(
+  output_dir: Path,
+  tweets: list[dict[str, Any]],
+  updated_at: datetime,
+):
   for tweet in tweets:
     tweet_id = str(tweet['id'])
 
@@ -89,7 +45,7 @@ def __run_favorite(config: FavoriteConfig):
     tweet_url = f'https://twitter.com/{screen_name}/status/{tweet_id}'
     print(tweet_url)
 
-    tweet_dir = Path(config.root_path, user_id, tweet_id)
+    tweet_dir = Path(output_dir, user_id, tweet_id)
     tweet_dir.mkdir(parents=True, exist_ok=True)
 
     entities = tweet.get('entities', {})
@@ -177,6 +133,63 @@ def __run_favorite(config: FavoriteConfig):
         'found_at': found_at.isoformat(),
         'updated_at': updated_at.isoformat(),
       }, fp, ensure_ascii=False)
+
+
+def __run_favorite(config: FavoriteConfig):
+  param_max_id = config.max_id
+
+  twitter = Twitter(
+    auth=OAuth(
+      config.oauth_token,
+      config.oauth_secret,
+      config.consumer_key,
+      config.consumer_secret,
+    ),
+  )
+
+  updated_at = datetime.now(timezone.utc)
+
+  tweets = []
+
+  # favorite tweets
+  if not config.full_save:
+    kwargs = {}
+    if param_max_id is not None: # optional kwarg
+      kwargs['max_id'] = param_max_id
+
+    new_tweets = twitter.favorites.list(count=config.inpage_count, include_entities=True, tweet_mode='extended', **kwargs)
+
+    tweets += new_tweets
+  else:
+    saved_tweet_ids = []
+
+    while True:
+      kwargs = {}
+      if param_max_id is not None: # optional kwarg
+        kwargs['max_id'] = param_max_id
+
+      new_tweets = twitter.favorites.list(count=config.inpage_count, include_entities=True, tweet_mode='extended', **kwargs)
+      if len(new_tweets) == 0:
+        print(f'No tweet found anymore (max id: {param_max_id})')
+        break
+      if len(new_tweets) == 1 and new_tweets[0]['id'] == param_max_id and param_max_id in saved_tweet_ids:
+        print('Oldest tweet saved')
+        break
+
+      param_max_id = min(map(lambda tweet: int(tweet['id']), new_tweets))
+      tweets += new_tweets
+      saved_tweet_ids += list(map(lambda tweet: int(tweet['id']), new_tweets))
+      print(f'Current tweets: {len(tweets)}, oldest ID: {param_max_id}')
+      time.sleep(3)
+
+  # self tweets
+  tweets += twitter.statuses.user_timeline(count=config.inpage_count, include_entities=True, include_rts=True, tweet_mode='extended')
+
+  download_tweets(
+    output_dir=config.root_path,
+    tweets=tweets,
+    updated_at=updated_at,
+  )
 
 
 def run_favorite(args):
