@@ -25,6 +25,17 @@ class FavoriteConfig(BaseModel):
   max_id: int | None
   full_save: bool
 
+class SearchConfig(BaseModel):
+  root_path: Path
+  consumer_key: str
+  consumer_secret: str
+  oauth_token: str
+  oauth_secret: str
+  inpage_count: int
+  max_id: int | None
+  full_save: bool
+  keyword: str
+
 
 class AuthenticateConfig(BaseModel):
   consumer_key: str
@@ -207,6 +218,89 @@ def run_favorite(args):
   )
 
 
+def __run_search(config: SearchConfig):
+  param_max_id = config.max_id
+
+  twitter = Twitter(
+    auth=OAuth(
+      config.oauth_token,
+      config.oauth_secret,
+      config.consumer_key,
+      config.consumer_secret,
+    ),
+  )
+
+  updated_at = datetime.now(timezone.utc)
+
+  tweets = []
+
+  # search tweets
+  if not config.full_save:
+    kwargs = {}
+    if param_max_id is not None: # optional kwarg
+      kwargs['max_id'] = param_max_id
+
+    new_tweets = twitter.search.tweets(
+      q=config.keyword,
+      count=config.inpage_count,
+      include_entities=True,
+      tweet_mode='extended',
+      **kwargs,
+    )['statuses']
+
+    tweets += new_tweets
+  else:
+    saved_tweet_ids = []
+
+    while True:
+      kwargs = {}
+      if param_max_id is not None: # optional kwarg
+        kwargs['max_id'] = param_max_id
+
+      new_tweets = twitter.search.tweets(
+        q=config.keyword,
+        count=config.inpage_count,
+        include_entities=True,
+        tweet_mode='extended',
+        **kwargs,
+      )['statuses']
+
+      if len(new_tweets) == 0:
+        print(f'No tweet found anymore (max id: {param_max_id})')
+        break
+      if len(new_tweets) == 1 and new_tweets[0]['id'] == param_max_id and param_max_id in saved_tweet_ids:
+        print('Oldest tweet saved')
+        break
+
+      param_max_id = min(map(lambda tweet: int(tweet['id']), new_tweets))
+      tweets += new_tweets
+      saved_tweet_ids += list(map(lambda tweet: int(tweet['id']), new_tweets))
+      print(f'Current tweets: {len(tweets)}, oldest ID: {param_max_id}')
+      time.sleep(3)
+
+  download_tweets(
+    output_dir=config.root_path,
+    tweets=tweets,
+    updated_at=updated_at,
+  )
+
+
+def run_search(args):
+  __run_search(
+    config=SearchConfig(
+      root_path=args.root_path,
+      oauth_token=args.oauth_token,
+      oauth_secret=args.oauth_secret,
+      consumer_key=args.consumer_key,
+      consumer_secret=args.consumer_secret,
+      inpage_count=args.inpage_count,
+      max_id=args.max_id,
+      full_save=args.full_save,
+      keyword=args.keyword,
+    )
+  )
+
+
 def __run_authenticate(config: AuthenticateConfig):
   oauth_token, oauth_secret = oauth_dance('twifavoritedl', config.consumer_key, config.consumer_secret)
 
@@ -240,6 +334,18 @@ def main():
   subparser_favorite.add_argument('--max_id', type=int)
   subparser_favorite.add_argument('--full_save', action='store_true')
   subparser_favorite.set_defaults(handler=run_favorite)
+
+  subparser_search = subparsers.add_parser('search')
+  subparser_search.add_argument('--root_path', type=Path, default=os.environ.get('TWIFAVDL_ROOT_PATH'))
+  subparser_search.add_argument('--consumer_key', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_KEY'))
+  subparser_search.add_argument('--consumer_secret', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_SECRET'))
+  subparser_search.add_argument('--oauth_token', type=str, default=os.environ.get('TWIFAVDL_OAUTH_TOKEN'))
+  subparser_search.add_argument('--oauth_secret', type=str, default=os.environ.get('TWIFAVDL_OAUTH_SECRET'))
+  subparser_search.add_argument('--inpage_count', type=int, default=os.environ.get('TWIFAVDL_INPAGE_COUNT'))
+  subparser_search.add_argument('--max_id', type=int)
+  subparser_search.add_argument('--full_save', action='store_true')
+  subparser_search.add_argument('--keyword', type=str, default=os.environ.get('TWIFAVDL_KEYWORD'))
+  subparser_search.set_defaults(handler=run_search)
 
   subparser_authenticate = subparsers.add_parser('authenticate')
   subparser_authenticate.add_argument('--consumer_key', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_KEY'))

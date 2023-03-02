@@ -66,6 +66,8 @@ TWIFAVDL_OAUTH_SECRET=
 
 ```shell
 docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl favorite
+
+docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl search --keyword="#superbowl"
 ```
 
 ## Update requirements
