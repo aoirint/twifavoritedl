@@ -2,7 +2,7 @@
 
 - Python 3.10
 
-## 1. Build docker iamge
+## 1. Build docker image
 
 ```shell
 docker build -t aoirint/twifavoritedl .
@@ -62,7 +62,7 @@ TWIFAVDL_OAUTH_TOKEN=
 TWIFAVDL_OAUTH_SECRET=
 ```
 
-## 5. Execute downlaod
+## 5. Execute download
 
 ```shell
 docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl favorite
