@@ -44,7 +44,7 @@ class LookupConfig(BaseModel):
   oauth_token: str
   oauth_secret: str
   inpage_count: int
-  id_list: list[int]
+  id_list: list[int] | None
   id_list_file: Path | None
 
 
@@ -327,7 +327,10 @@ def __run_lookup(config: LookupConfig):
   tweets = []
 
   # lookup tweets
-  id_list = config.id_list
+  id_list: list[int] = [] 
+  if config.id_list is not None:
+    id_list.extend(config.id_list)
+
   if config.id_list_file is not None:
     id_list.extend(map(lambda id_str: int(id_str.strip()), config.id_list_file.read_text(encoding='utf-8').split()))
 
