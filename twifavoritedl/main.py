@@ -14,18 +14,23 @@ from twitter import Twitter, OAuth, oauth_dance
 from pydantic import BaseModel
 
 
-class Config(BaseModel):
+class FavoriteConfig(BaseModel):
   root_path: Path
-  oauth_token: str
-  oauth_secret: str
   consumer_key: str
   consumer_secret: str
+  oauth_token: str
+  oauth_secret: str
   inpage_count: int
   max_id: int | None
   full_save: bool
 
 
-def run(config: Config):
+class AuthenticateConfig(BaseModel):
+  consumer_key: str
+  consumer_secret: str
+
+
+def __run_favorite(config: FavoriteConfig):
   param_max_id = config.max_id
 
   twitter = Twitter(
@@ -174,21 +179,9 @@ def run(config: Config):
       }, fp, ensure_ascii=False)
 
 
-def main():
-  import argparse
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--root_path', type=Path, default=os.environ.get('TWIFAVDL_ROOT_PATH'))
-  parser.add_argument('--oauth_token', type=str, default=os.environ.get('TWIFAVDL_OAUTH_TOKEN'))
-  parser.add_argument('--oauth_secret', type=str, default=os.environ.get('TWIFAVDL_OAUTH_SECRET'))
-  parser.add_argument('--consumer_key', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_KEY'))
-  parser.add_argument('--consumer_secret', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_SECRET'))
-  parser.add_argument('--inpage_count', type=int, default=os.environ.get('TWIFAVDL_INPAGE_COUNT'))
-  parser.add_argument('--max_id', type=int)
-  parser.add_argument('--full_save', action='store_true')
-  args = parser.parse_args()
-
-  run(
-    config=Config(
+def run_favorite(args):
+  __run_favorite(
+    config=FavoriteConfig(
       root_path=args.root_path,
       oauth_token=args.oauth_token,
       oauth_secret=args.oauth_secret,
@@ -199,6 +192,53 @@ def main():
       full_save=args.full_save,
     )
   )
+
+
+def __run_authenticate(config: AuthenticateConfig):
+  oauth_token, oauth_secret = oauth_dance('twifavoritedl', config.consumer_key, config.consumer_secret)
+
+  print(f'TWIFAVDL_OAUTH_TOKEN={oauth_token}')
+  print(f'TWIFAVDL_OAUTH_SECRET={oauth_secret}')
+
+
+def run_authenticate(args):
+  __run_authenticate(
+    config=AuthenticateConfig(
+      oauth_token=args.oauth_token,
+      oauth_secret=args.oauth_secret,
+      consumer_key=args.consumer_key,
+      consumer_secret=args.consumer_secret,
+    )
+  )
+
+
+def main():
+  import argparse
+  parser = argparse.ArgumentParser()
+
+  subparsers = parser.add_subparsers()
+  subparser_favorite = subparsers.add_parser('favorite')
+  subparser_favorite.add_argument('--root_path', type=Path, default=os.environ.get('TWIFAVDL_ROOT_PATH'))
+  subparser_favorite.add_argument('--consumer_key', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_KEY'))
+  subparser_favorite.add_argument('--consumer_secret', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_SECRET'))
+  subparser_favorite.add_argument('--oauth_token', type=str, default=os.environ.get('TWIFAVDL_OAUTH_TOKEN'))
+  subparser_favorite.add_argument('--oauth_secret', type=str, default=os.environ.get('TWIFAVDL_OAUTH_SECRET'))
+  subparser_favorite.add_argument('--inpage_count', type=int, default=os.environ.get('TWIFAVDL_INPAGE_COUNT'))
+  subparser_favorite.add_argument('--max_id', type=int)
+  subparser_favorite.add_argument('--full_save', action='store_true')
+  subparser_favorite.set_defaults(handler=run_favorite)
+
+  subparser_authenticate = subparsers.add_parser('authenticate')
+  subparser_authenticate.add_argument('--consumer_key', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_KEY'))
+  subparser_authenticate.add_argument('--consumer_secret', type=str, default=os.environ.get('TWIFAVDL_CONSUMER_SECRET'))
+  subparser_authenticate.set_defaults(handler=run_authenticate)
+
+  args = parser.parse_args()
+
+  if hasattr(args, 'handler'):
+    args.handler(args)
+  else:
+    parser.print_help()
 
 
 if __name__ == '__main__':
