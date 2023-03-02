@@ -2,53 +2,70 @@
 
 - Python 3.10
 
+## 1. Build docker iamge
+
 ```shell
 docker build -t aoirint/twifavoritedl .
-
-docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl
 ```
 
----
-
-## build docker image
-
-```shell
-make build
-```
-
-## create .env.myaccount
-
-- Copy `template.env` to `.env.myaccount` and set values
-
-## create twitter app
+## 2. Create a Twiter App
 
 - <https://developer.twitter.com/en/portal/projects-and-apps>
 
-Enable OAuth 1.0a and copy CONSUMER_KEY and CONSUMER_SECRET to your .env.
+Enable OAuth 1.0a and copy `Consumer Key` and `Consumer Secret` to your .env.
 
-## run authenticate
+```env
+# .env
 
-```shell
-make authenticate ARGS="--env-file=$(pwd)/.env.myaccount"
+TWIFAVDL_CONSUMER_KEY=
+TWIFAVDL_CONSUMER_SECRET=
 ```
 
-Open printed URL in your browser and authorize your app.
-
-Paste outputs (OAUTH_TOKEN, OAUTH_SECRET) to your .env.
-
-## create save directory
-
-Save directory has to be owned by user=1000 and group=1000.
+## 3. Authenticate with your Twitter account
 
 ```shell
-mkdir -p /path/to/twifavoritedl/tweets_myaccount
-sudo chown -R 1000:1000 /path/to/twifavoritedl/tweets_myaccount
+docker run --rm --env-file ./.env -it aoirint/twifavoritedl authenticate
 ```
 
-## run crawl
+Open the printed URL in your browser and authorize your app.
+
+Paste `OAuth Token`, `OAuth Secret` to your .env.
+
+```env
+# .env
+
+TWIFAVDL_CONSUMER_KEY=
+TWIFAVDL_CONSUMER_SECRET=
+TWIFAVDL_OAUTH_TOKEN=
+TWIFAVDL_OAUTH_SECRET=
+```
+
+
+## 4. Prepare a download directory
 
 ```shell
-make run ARGS="--env-file=$(pwd)/.env.myaccount -v=/path/to/twifavoritedl/tweets_myaccount:/path/to/twifavoritedl/tweets_myaccount"
+mkdir ./data
+chown -R 1000:1000 ./data
+```
+
+## 5. Configure .env
+
+```env
+# .env
+
+TWIFAVDL_ROOT_PATH=/data
+TWIFAVDL_INPAGE_COUNT=200
+
+TWIFAVDL_CONSUMER_KEY=
+TWIFAVDL_CONSUMER_SECRET=
+TWIFAVDL_OAUTH_TOKEN=
+TWIFAVDL_OAUTH_SECRET=
+```
+
+## 5. Execute downlaod
+
+```shell
+docker run --rm --env-file ./.env -v "./data:/data" aoirint/twifavoritedl favorite
 ```
 
 ## Update requirements
