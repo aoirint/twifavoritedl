@@ -382,8 +382,6 @@ def __run_authenticate(config: AuthenticateConfig):
 def run_authenticate(args):
   __run_authenticate(
     config=AuthenticateConfig(
-      oauth_token=args.oauth_token,
-      oauth_secret=args.oauth_secret,
       consumer_key=args.consumer_key,
       consumer_secret=args.consumer_secret,
     )
