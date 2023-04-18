@@ -1,6 +1,6 @@
 # twifavoritedl
 
-- Python 3.10
+- Python 3.11
 
 ## 1. Build docker image
 
