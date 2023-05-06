@@ -24,6 +24,8 @@ class FavoriteConfig(BaseModel):
   inpage_count: int
   max_id: int | None
   full_save: bool
+  timeout: int | None
+
 
 class SearchConfig(BaseModel):
   root_path: Path
@@ -35,6 +37,7 @@ class SearchConfig(BaseModel):
   max_id: int | None
   full_save: bool
   keyword: str
+  timeout: int | None
 
 
 class LookupConfig(BaseModel):
@@ -46,6 +49,7 @@ class LookupConfig(BaseModel):
   inpage_count: int
   id_list: list[int] | None
   id_list_file: Path | None
+  timeout: int | None
 
 
 class AuthenticateConfig(BaseModel):
@@ -173,13 +177,17 @@ def __run_favorite(config: FavoriteConfig):
 
   tweets = []
 
+  timeout_kwargs = {}
+  if config.timeout is not None:
+      timeout_kwargs['_timeout'] = config.timeout
+
   # favorite tweets
   if not config.full_save:
     kwargs = {}
     if param_max_id is not None: # optional kwarg
       kwargs['max_id'] = param_max_id
 
-    new_tweets = twitter.favorites.list(count=config.inpage_count, include_entities=True, tweet_mode='extended', **kwargs)
+    new_tweets = twitter.favorites.list(count=config.inpage_count, include_entities=True, tweet_mode='extended', **kwargs, **timeout_kwargs)
 
     tweets += new_tweets
   else:
@@ -190,7 +198,7 @@ def __run_favorite(config: FavoriteConfig):
       if param_max_id is not None: # optional kwarg
         kwargs['max_id'] = param_max_id
 
-      new_tweets = twitter.favorites.list(count=config.inpage_count, include_entities=True, tweet_mode='extended', **kwargs)
+      new_tweets = twitter.favorites.list(count=config.inpage_count, include_entities=True, tweet_mode='extended', **kwargs, **timeout_kwargs)
       if len(new_tweets) == 0:
         print(f'No tweet found anymore (max id: {param_max_id})')
         break
@@ -205,7 +213,7 @@ def __run_favorite(config: FavoriteConfig):
       time.sleep(3)
 
   # self tweets
-  tweets += twitter.statuses.user_timeline(count=config.inpage_count, include_entities=True, include_rts=True, tweet_mode='extended')
+  tweets += twitter.statuses.user_timeline(count=config.inpage_count, include_entities=True, include_rts=True, tweet_mode='extended', **timeout_kwargs)
 
   download_tweets(
     output_dir=config.root_path,
@@ -245,6 +253,10 @@ def __run_search(config: SearchConfig):
 
   tweets = []
 
+  timeout_kwargs = {}
+  if config.timeout is not None:
+      timeout_kwargs['_timeout'] = config.timeout
+
   # search tweets
   if not config.full_save:
     kwargs = {}
@@ -257,6 +269,7 @@ def __run_search(config: SearchConfig):
       include_entities=True,
       tweet_mode='extended',
       **kwargs,
+      **timeout_kwargs,
     )['statuses']
 
     tweets += new_tweets
@@ -274,6 +287,7 @@ def __run_search(config: SearchConfig):
         include_entities=True,
         tweet_mode='extended',
         **kwargs,
+        **timeout_kwargs,
       )['statuses']
 
       if len(new_tweets) == 0:
@@ -326,6 +340,10 @@ def __run_lookup(config: LookupConfig):
 
   tweets = []
 
+  timeout_kwargs = {}
+  if config.timeout is not None:
+      timeout_kwargs['_timeout'] = config.timeout
+
   # lookup tweets
   id_list: list[int] = [] 
   if config.id_list is not None:
@@ -342,6 +360,7 @@ def __run_lookup(config: LookupConfig):
       count=config.inpage_count,
       include_entities=True,
       tweet_mode='extended',
+      **timeout_kwargs,
     )
 
     tweets += new_tweets
@@ -402,6 +421,7 @@ def main():
   subparser_favorite.add_argument('--inpage_count', type=int, default=os.environ.get('TWIFAVDL_INPAGE_COUNT'))
   subparser_favorite.add_argument('--max_id', type=int)
   subparser_favorite.add_argument('--full_save', action='store_true')
+  subparser_favorite.add_argument('--timeout', type=int, default=os.environ.get('TWIFAVDL_TIMEOUT'))
   subparser_favorite.set_defaults(handler=run_favorite)
 
   subparser_search = subparsers.add_parser('search')
@@ -414,6 +434,7 @@ def main():
   subparser_search.add_argument('--max_id', type=int)
   subparser_search.add_argument('--full_save', action='store_true')
   subparser_search.add_argument('--keyword', type=str, default=os.environ.get('TWIFAVDL_KEYWORD'))
+  subparser_search.add_argument('--timeout', type=int, default=os.environ.get('TWIFAVDL_TIMEOUT'))
   subparser_search.set_defaults(handler=run_search)
 
   subparser_lookup = subparsers.add_parser('lookup')
@@ -427,6 +448,7 @@ def main():
   subparser_lookup.add_argument('--full_save', action='store_true')
   subparser_lookup.add_argument('--id_list', type=int, nargs='*', default=os.environ.get('TWIFAVDL_ID_LIST'))
   subparser_lookup.add_argument('--id_list_file', type=Path, default=os.environ.get('TWIFAVDL_ID_LIST_FILE'))
+  subparser_lookup.add_argument('--timeout', type=int, default=os.environ.get('TWIFAVDL_TIMEOUT'))
   subparser_lookup.set_defaults(handler=run_lookup)
 
   subparser_authenticate = subparsers.add_parser('authenticate')
